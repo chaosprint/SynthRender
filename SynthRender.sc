@@ -25,7 +25,7 @@ SynthRender {
 		switch ( bufSymbolID.size,
 
 			0, { // the condition when synth uses no buf
-				score.add( [ 0, synth.newMsg(Server.local, args) ] );
+				score.add( [0, synth.newMsg(Server.local, args) ] );
 			},
 
 			1, { // the synth has one buffer
@@ -39,7 +39,7 @@ SynthRender {
 					var path;
 					bufSymbol = args.removeAt(bufSymbolID);
 					path = args.removeAt(bufSymbolID).path;
-					score.add([0, buffer.allocReadMsg(path)]);
+					score.add( [0, buffer.allocReadMsg(path)] );
 					score.add([0, synth.newMsg(Server.local, args ++ [bufSymbol, buffer] )] );
 				},{
 					score.add([0, synth.newMsg(Server.local, args)] );
