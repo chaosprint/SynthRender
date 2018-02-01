@@ -1,0 +1,111 @@
+TITLE:: SynthRender
+summary:: A shortcut for rendering a synth
+categories:: Control, Server>NRT, External Control>OSC
+related:: Classes/Synth, Classes/SynthDef, Classes/Score, Guides/Non-Realtime-Synthesis
+
+DESCRIPTION::
+A SynthRender takes the defName of a link::Classes/Synth:: and its arguments, and then automatically wrap it as link::Guides/OSC_communication:: to do link::Guides/Non-Realtime-Synthesis::.
+
+CLASSMETHODS::
+
+METHOD:: new
+
+Renders the synth to a sound file in non-realtime on the default recording folder: code::thisProcess.platform.recordingsDir::.
+
+note::Use .load(s) instead of .add in the link::Classes/SynthDef::.::
+
+argument:: defName
+A String or Symbol specifying the name of the SynthDef to use in creating the Synth.
+
+argument:: args
+An optional link::Classes/Array:: specifying initial values for the link::Classes/SynthDef::'s arguments (controls). These are specified in pairs of control name or index and value. If names are used they can be specified with either link::Classes/String::s or link::Classes/Symbol::s. e.g. code:: [\frequency, 440, \amplitude, 1, ...] ::.
+Values that are arrays are sent using OSC array type-tags ($[ and $]).  These values will be assigned to subsequent controls.
+
+ARGUMENT:: dur
+
+ARGUMENT:: soundFileName
+The name of the sound file without extensions.
+ARGUMENT:: chan
+The number of audio output bus channels.
+
+INSTANCEMETHODS::
+
+METHOD:: score
+
+returns:: The OSC score.
+
+EXAMPLES::
+
+code::
+
+(
+SynthDef(\granular2, {
+
+	arg grainFreq=20, grainSize=0.2, buf0, buf1,
+	rate=1, pos=0.3, pan=0.5, amp=0.8, out=0, gate=0;
+
+	var sig, sigL, sigR, env;
+
+	env = Env([0, 1, 1, 0], [0.001, 7-0.002, 0.002]).kr(2);
+
+	sigL = GrainBuf.ar(1, Impulse.kr(grainFreq),
+		grainSize, buf0,
+		XLine.kr(0.2, 5, 7),
+		pos*LFNoise1.kr(100).range(0.98,1.02)
+	) * 0.5;
+
+	sigR = GrainBuf.ar(1, Impulse.kr(grainFreq),
+		grainSize, buf1,
+		XLine.kr(0.2, 5, 7),
+		pos*LFNoise1.kr(100).range(0.98,1.02)
+	) * 0.5;
+
+	sig = Balance2.ar(sigL, sigR, pan*2-1, amp);
+	Out.ar(out, sig*env);
+}).load(s);
+
+~sndL = Buffer.readChannel(s, Platform.resourceDir +/+ "sounds/SinedPink.aiff", 0, -1, 0);
+~sndR = Buffer.readChannel(s, Platform.resourceDir +/+ "sounds/SinedPink.aiff", 0, -1, 1);
+)
+
+// buffer auguments should at least contain "buf", e.g. "buf0" or "buffer0"
+Synth(\granular2, [\buf0, ~sndL, \buf1, ~sndR, \pan, 0]);
+Synth(\granular2, [\buf0, ~sndL, \buf1, ~sndR, \pan, 1]);
+Synth(\granular2, [\buf0, ~sndL, \buf1, ~sndR, \pan, 0.5]);
+
+// you can simply use the same arguments
+// however, this will render a 10-second sound only as default
+SynthRender(\granular2, [\buf0, ~sndL, \buf1, ~sndR]);
+
+// you can also customise the duration and filename
+SynthRender(\granular2, [\buf0, ~sndL, \buf1, ~sndR], 7, "sin-pink-grain");
+
+(
+SynthDef(\sampler, {
+	arg buf=0, outBus=0, rate=1, amp=0.3;
+	var sig;
+	sig = PlayBuf.ar(1, buf, rate*BufRateScale.kr(buf), doneAction:2)!2;
+	Out.ar(outBus, sig*amp);
+}).load(s);
+~snd = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01.wav");
+)
+
+Synth(\sampler, [\buf, ~snd]);
+2.do{|i| SynthRender(\sampler, [\buf, ~snd], 10, i.asString) }
+
+(
+SynthDef(\ding, {
+	arg freq = 2000;
+	var sig, env;
+	env = Env.perc(0.05, 1, 1).kr;
+	sig = Saw.ar(freq!2) * env;
+	sig =  AllpassC.ar(Decay.ar(Impulse.ar(10), 0.1, sig), 0.1, 0.1, 1);
+	sig = FreeVerb.ar(sig, 0.3, 0.5, 0.3);
+	Out.ar(0, sig);
+}).load;
+)
+
+Synth(\ding);
+SynthRender(\ding);
+
+::
