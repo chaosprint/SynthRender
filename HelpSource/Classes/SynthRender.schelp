@@ -91,7 +91,6 @@ SynthDef(\sampler, {
 )
 
 Synth(\sampler, [\buf, ~snd]);
-2.do{|i| SynthRender(\sampler, [\buf, ~snd], 10, i.asString) }
 
 (
 SynthDef(\ding, {
