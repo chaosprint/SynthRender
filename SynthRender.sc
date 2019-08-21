@@ -1,14 +1,14 @@
 SynthRender {
-	var defName, args, dur, soundFileName, chan;
+	var defName, args, dur, soundFileName, chan, keepOSC, action;
 
 	var oscPath, soundPath;
 
 	var <score, synth, buffer, bufSymbol, bufSymbolID;
 
 	*new {
-		arg defName = \default, args= #[], dur = 10, soundFileName, chan = 2;
+		arg defName=\default, args=#[], dur=10, soundFileName, chan=2, keepOSC=false, action={};
 
-		^super.newCopyArgs(defName, args, dur, soundFileName, chan).initSynthRender;
+		^super.newCopyArgs(defName, args, dur, soundFileName, chan, keepOSC, action).initSynthRender;
 	}
 
 	initSynthRender {
@@ -72,12 +72,12 @@ SynthRender {
 
 		if (soundFileName.isNil, {
 			oscPath = thisProcess.platform.recordingsDir.replace("\\", "/") ++
-			"/" ++ Date.localtime.stamp;
+			"/" ++ Date.localtime.stamp ++ "_" ++ defName ++ ".osc";
 			soundPath = thisProcess.platform.recordingsDir.replace("\\", "/") ++
-			"/" ++ Date.localtime.stamp ++ ".wav";
+			"/" ++ Date.localtime.stamp ++ "_" ++ defName ++".wav";
 		}, {
 			oscPath = thisProcess.platform.recordingsDir.replace("\\", "/") ++
-			"/" ++ soundFileName;
+			"/" ++ soundFileName ++ ".osc";
 			soundPath = thisProcess.platform.recordingsDir.replace("\\", "/") ++
 			"/" ++ soundFileName ++ ".wav";
 		});
@@ -88,9 +88,12 @@ SynthRender {
 				soundPath,
 				duration:dur,
 				options: ServerOptions.new.numOutputBusChannels_(chan),
-				action: {File.delete(oscPath)}
+				action: {
+					action.defer;
+					if (keepOSC.not) {File.delete(oscPath)};
+					postf("\nRendered as: %;\n\nDur: % sec\n", soundPath, dur)
+				}
 			);
-		};
-		);
+		});
 	}
 }
