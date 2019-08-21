@@ -1,6 +1,6 @@
 # SynthRender
 
-A SuperCollider class for rendering a synth.
+One-line code for rendering a SynthDef in SuperCollider.
 
 ## Installation
 
